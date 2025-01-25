@@ -69,13 +69,14 @@ python -m src.scripts.train --dataset_name davis --n_trials 1
 - `n_trials` specifies how many Optuna trials to explore.  
 The tuning logic in `src/tuning/tune.py` searches different GNN architectures, hidden dimensions, etc.
 
-### Interpretability Mode
+### Note about `interpretability_mode` in `src/models/model.py`
 
-To enable gradient-based interpretability (e.g., Saliency Maps) at inference, set `interpretability_mode=True`. Normally, inference occurs under `torch.no_grad()` to speed up evaluation—this would disable gradients. Instead, you must:
+In typical interpretability methods, you compute gradients w.r.t. the input features during inference. For sequential data (like proteins), an embedding layer is non-differentiable, so you capture gradients w.r.t. the embedding output. During evaluation (`model.eval()`), autograd is usually off to speed up inference, but for interpretability you must:
 
+- Ensure you are **not** in `torch.no_grad()`.
+- Enable `interpretability_mode=True` in your model so that the protein embeddings are leaf nodes (`requires_grad=True`), allowing backpropagation to flow into them.
 - Call `model.eval()` (to deactivate dropout/batch norm training),
-- **Not** wrap in `torch.no_grad()`,
-- And explicitly set `model.interpretability_mode = True` so that protein embeddings become leaf nodes (`requires_grad=True`).
+  
 
 ## Evaluating on the Test Set
 
